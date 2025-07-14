@@ -1,0 +1,93 @@
+/*
+OrangePi Zero 3 -> ILI9488 LCD connections
+T_IRQ = PC15
+T_DO = PH8
+T_DIN = LCD_SDI
+T_CS = PC10
+T_CLK = LCD_SCK
+
+//SDO (LCD MISO) = PH8 (OPIZ MISO)
+LED = PC8
+SCK (SPI CLOCK) = PH6
+SDI (LCD MOSI) = PH7 (OPIZ MOSI)
+LCD DC (DATA/CONTROL) = PC7 *
+LCD RESET = PC14
+CS (CHIP SELECT) = PH9
+GND = GND PIN 20
+VCC = 3.3V
+*/
+
+/dts-v1/;
+/plugin/;
+/{
+    compatible = "allwinner,sun50i-h616";
+
+    fragment@0 {
+        target = <&spi1>;
+        __overlay__ {
+            status="okay";
+            pinctrl-names = "default";
+            pinctrl-0 = <&spi1_pins>;
+            cs-gpios = <&pio 7 9 0>,<&pio 2 10 0>;  /* PH9 chip select for lcd, PC10=CS1 fo touch */
+            num-chipselects = <1>;
+            display: display@0 {
+                compatible = "ilitek,ili9488";
+                reg = <0>;
+                pinctrl-names = "default";
+//                pinctrl-1 = <&display_pins>;
+                spi-max-frequency = <60000000>;
+                rotate = <270>; /* rotate for ili9341, rotation for yx240qv29 */
+                bgr = <1>;
+                fps = <30>;
+                buswidth = <8>;
+//                regwidth = <8>;
+                height = <480>;
+                width = <320>;
+                reset-gpios = <&pio 2 14 1>; /* PC14 reset pin*/
+                dc-gpios = <&pio 2 7 0>; /* PC7 Data control pin */
+                led-gpios = <&pio 2 8 0>; /* PC8 Led control */
+                debug = <3>;
+                init = <0x10000b0 0x00
+                        0x1000011  //sleep out
+                        0x20000ff  //no idea
+                        //0x100003a 0x55 //pixel format/ DBI=DPI=16bits
+                        0x10000F7 0xA9 0x51 0x2C 0x82 //adjust control 3
+                        0x10000C0 0x11 0x09 //power control 1
+                        0x10000C1 0x41 //power control 2
+                        0x10000C5 0x00 0x0A 0x80 //voltage common control
+                        0x10000B1 0xB0 0x11 //frame rate control
+                        0x10000B4 0x02 //display inversion control
+                        0x10000B6 0x02 0x02 //display function control
+                        0x10000B7 0xC6 //entry mode set
+                        0x10000BE 0x00 0x04 //HS lanes control
+                        0x10000E9 0x00 //set image function
+                        0x1000036 0x28 //memory access control
+                        0x10000E0 0x00 0x07 0x10 0x09 0x17 0x0B 0x41 0x89 0x4B 0x0A 0x0C 0x0E 0x18 0x1B 0x0F //PGAMCTR positive gamma control
+                        0x10000E1 0x00 0x17 0x1A 0x04 0x0E 0x06 0x2F 0x45 0x43 0x02 0x0A 0x09 0x32 0x36 0x0F //NGAMCTRL negative gamma control
+                        0x1000011 //sleep out command
+                        0x1000029>; //display on
+            };
+
+            ads7846: ads7846@1 {
+                compatible = "ti,ads7846";
+                reg = <1>;
+                pinctrl-names = "default";
+                spi-max-frequency = <1000000>;
+                interrupt-parent = <&pio>;
+                interrupts = <2 15 2>; // PC15 - IRQ
+                pendown-gpio = <&pio 2 15 1>; // PC15
+                
+                // OPTIONS
+                ti,x-min = /bits/ 16 <290>;
+                ti,y-min = /bits/ 16 <390>;
+                ti,x-max = /bits/ 16 <3750>;
+                ti,y-max = /bits/ 16 <3700>;
+                ti,pressure-min = /bits/ 16 <0>;
+                ti,pressure-max = /bits/ 16 <0xFFF>;
+                ti,x-plate-ohms = /bits/ 16 <400>;
+                ti,swap-xy = <1>;
+                wakeup-source;
+            };
+        };
+    };
+};
