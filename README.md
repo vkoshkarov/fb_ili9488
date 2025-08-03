@@ -55,7 +55,7 @@ apt list --installed | grep linux-headers
 
 Cоберем драйвер:
 ```
-cd ~/fb_st7796s_lerdge/kernel_module/
+cd ~/fb_ili9488/kernel_module/
 make clean
 make
 sudo make install
@@ -91,7 +91,13 @@ sudo evtest
 # Настройка Xorg и KlipperScreen
 Сначала установим KlipperScreen через kiauh.
 
-После установки KlipperScreen я ничего более не делал экран завелся автоматически. Если у вас не так, дальнейшую настройку посмотрите у [trambouter](https://github.com/trambouter/fb_st7796s_lerdge.git)
+Копируем файл /conf/99-fbdev.conf в /usr/share/X11/xorg.conf.d/ (или в /etc/X11/xorg.conf.d/)
+```
+cd ../conf/
+sudo cp 99-fbdev.conf /usr/share/X11/xorg.conf.d
+```
+
+После перезагрузки экран завелся автоматически. Если у вас не так, дальнейшую настройку посмотрите у [trambouter](https://github.com/trambouter/fb_st7796s_lerdge.git)
 
 При необходимости можно произвести калибровку тача, сначала узнаем id устройства:
 
@@ -109,4 +115,19 @@ DISPLAY=:0 sudo xinput_calibrator --device 6 --output-type xorg.conf.d  --output
 Результат калибровки запишется в __/etc/X11/xorg.conf.d/99-calibration.conf__, потребуется только перезапустить KlipperScreen для применения параметров:
 ```
 sudo systemctl restart KlipperScreen.service
+```
+
+Если при выполнении команды _DISPLAY=:0 xinput_calibrator --list_ возникает ошибка, смотрите логи __/var/log/Xorg.0.log__
+```
+Failed to load /usr/lib/xorg/modules/input/libinput_drv.so: libinput.so.10: cannot open shared object file: No such file or directory
+```
+Если там есть такое сообщение потребуется переустановка __libinput__
+```
+sudo apt update
+sudo apt install --reinstall libinput10 libinput-bin xserver-xorg-input-libinput
+```
+Проверьте наличие файлов:
+```
+ls -l /usr/lib/xorg/modules/input/libinput_drv.so
+ldd /usr/lib/xorg/modules/input/libinput_drv.so | grep libinput.so.10
 ```
